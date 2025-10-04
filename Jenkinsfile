@@ -48,8 +48,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    sh 'cd gestion-smartphones-backend && npm test || echo "Aucun test backend"'
-                    sh 'cd gestion-smartphones-frontend && npm test || echo "Aucun test frontend"'
+                    sh 'cd gestion-smartphone-backend && npm test || echo "Aucun test backend"'
+                    sh 'cd gestion-smartphone-frontend && npm test || echo "Aucun test frontend"'
                 }
             }
         }
