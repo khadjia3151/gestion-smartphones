@@ -104,7 +104,7 @@ pipeline {
             }
         }
 
-        stage('Deploy (compose.yaml)') {
+        stage('Deploy (docker-compose.yml)') {
             steps {
                 dir('.') {  
                     sh 'docker-compose -f docker-compose.yml down || true'
