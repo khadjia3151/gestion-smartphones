@@ -104,17 +104,18 @@ pipeline {
             }
         }
 
-        stage('Deploy (docker-compose.yml)') {
-            steps {
-                dir('.') {  
-                    sh 'docker-compose -f docker-compose.yml down || true'
-                    sh 'docker-compose -f docker-compose.yml pull'
-                    sh 'docker-compose -f docker-compose.yml up -d'
-                    sh 'docker-compose -f docker-compose.yml ps'
-                    sh 'docker-compose -f docker-compose.yml logs --tail=50'
-                }
-            }
+       stage('Deploy (docker-compose.yml)') {
+           steps {
+                dir('.') {
+                sh 'docker-compose -f docker-compose.yml down || true'
+                sh 'docker-compose -f docker-compose.yml pull'
+                sh 'docker-compose -f docker-compose.yml up -d'
+                sh 'docker-compose -f docker-compose.yml ps'
+                sh 'docker-compose -f docker-compose.yml logs --tail=50'
         }
+    }
+}
+
 
         stage('Smoke Test') {
             steps {
