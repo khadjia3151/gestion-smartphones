@@ -1,17 +1,13 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs "NodeJS_16"
-    }
-
     environment {
         DOCKER_HUB_USER = 'yayekhadygueye'
         FRONT_IMAGE = 'gestion-smartphones-frontend'
         BACK_IMAGE  = 'gestion-smartphones-backend'
     }
+
     triggers {
-        // Pour que le pipeline démarre quand le webhook est reçu
         GenericTrigger(
             genericVariables: [
                 [key: 'ref', value: '$.ref'],
@@ -32,7 +28,7 @@ pipeline {
             }
         }
 
-        stage('Install dependencies - gestion-smartphone-backend') {
+        stage('Install dependencies - Backend') {
             steps {
                 dir('gestion-smartphone-backend') {
                     sh 'npm install'
@@ -40,7 +36,7 @@ pipeline {
             }
         }
 
-        stage('Install dependencies - gestion-smartphone-frontend') {
+        stage('Install dependencies - Frontend') {
             steps {
                 dir('gestion-smartphone-frontend') {
                     sh 'npm install'
@@ -66,19 +62,33 @@ pipeline {
             }
         }
 
+        stage('Check Docker & Compose') {
+            steps {
+                sh '''
+                    echo "Vérification de Docker et Docker Compose..."
+                    docker --version
+                    if ! command -v docker-compose &> /dev/null
+                    then
+                      echo "Installation de docker-compose..."
+                      apt-get update && apt-get install -y docker-compose
+                    fi
+                    docker-compose --version
+                '''
+            }
+        }
+
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $DOCKER_USER/gestion-smartphones-frontend:latest
-                        docker push $DOCKER_USER/gestion-smartphone-backend:latest
+                        docker push $DOCKER_USER/$FRONT_IMAGE:latest
+                        docker push $DOCKER_USER/$BACK_IMAGE:latest
                     '''
                 }
             }
         }
 
-        // on supprime les conteneur inactif dans docker container
         stage('Clean Docker') {
             steps {
                 sh 'docker container prune -f'
@@ -86,16 +96,9 @@ pipeline {
             }
         }
 
-        stage('Check Docker & Compose') {
-            steps {
-                sh 'docker --version'
-                sh 'docker-compose --version || echo "docker-compose non trouvé"'
-            }
-        }
-
         stage('Deploy (docker-compose.yml)') {
             steps {
-                dir('.') {  
+                dir('.') {
                     sh 'docker-compose -f docker-compose.yml down || true'
                     sh 'docker-compose -f docker-compose.yml pull'
                     sh 'docker-compose -f docker-compose.yml up -d'
