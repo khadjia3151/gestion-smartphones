@@ -58,10 +58,24 @@ pipeline {
             steps {
                 script {
                     sh "docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest ./gestion-smartphone-frontend"
-                    sh "docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./gestion-smartphone-backend"
+                    sh "docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./gestion-smartphones-backend"
                 }
             }
         }
+        stage('Check Docker & Compose') {
+    steps {
+        sh '''
+            echo "Vérification de Docker et Docker Compose..."
+            docker --version
+            if ! command -v docker-compose &> /dev/null
+            then
+              echo "Installation de docker-compose..."
+              apt-get update && apt-get install -y docker-compose
+            fi
+            docker-compose --version
+        '''
+    }
+}
 
         stage('Push Docker Images') {
             steps {
