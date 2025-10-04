@@ -2,11 +2,10 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-# Installer Docker CLI et docker-compose
+# Installer Docker CLI et Docker Compose
 RUN apt-get update && \
-    apt-get install -y curl gnupg lsb-release && \
-    curl -fsSL https://get.docker.com | sh && \
-    apt-get install -y docker-compose-plugin
+    apt-get install -y docker.io docker-compose && \
+    usermod -aG docker jenkins
 
-# Remettre l’utilisateur Jenkins
 USER jenkins
+
