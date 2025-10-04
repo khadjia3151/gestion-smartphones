@@ -96,13 +96,26 @@ pipeline {
                 sh 'docker image prune -f'
             }
         }
+        stage('Test docker-compose syntax') {
+    steps {
+        dir('.') {
+            sh '''
+                echo "🔍 Vérification du fichier docker-compose.yml..."
+                if [ ! -f docker-compose.yml ]; then
+                    echo "❌ Fichier docker-compose.yml introuvable !"
+                    exit 1
+                fi
 
-        stage('Check Docker & Compose') {
-            steps {
-                sh 'docker --version'
-                sh 'docker-compose --version || echo "docker-compose non trouvé"'
-            }
+                echo "✅ Fichier trouvé. Vérification de la configuration..."
+                docker-compose -f docker-compose.yml config
+
+                echo "✅ Syntaxe docker-compose.yml valide."
+            '''
         }
+    }
+}
+
+
 
        stage('Deploy (docker-compose.yml)') {
            steps {
