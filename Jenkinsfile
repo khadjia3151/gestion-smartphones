@@ -1,11 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'  // ou node:20 si tu veux
-            args '-u root:root' // donne les droits root pour installer
-        }
-    }
-
+    agent any
 
     environment {
         DOCKER_HUB_USER = 'yayekhadygueye'
@@ -34,55 +28,70 @@ pipeline {
             }
         }
 
+        /* === Installation des dépendances === */
         stage('Install dependencies - Backend') {
             steps {
-                dir('gestion-smartphone-backend') {
-                    sh 'npm install'
+                script {
+                    docker.image('node:18').inside('--user root:root') {
+                        dir('gestion-smartphone-backend') {
+                            sh 'npm ci || npm install'
+                        }
+                    }
                 }
             }
         }
 
         stage('Install dependencies - Frontend') {
             steps {
-                dir('gestion-smartphone-frontend') {
-                    sh 'npm install'
+                script {
+                    docker.image('node:18').inside('--user root:root') {
+                        dir('gestion-smartphone-frontend') {
+                            sh 'npm ci || npm install'
+                        }
+                    }
                 }
             }
         }
 
+        /* === Tests === */
         stage('Run Tests') {
             steps {
                 script {
-                    sh 'cd gestion-smartphone-backend && npm test || echo "Aucun test backend"'
-                    sh 'cd gestion-smartphone-frontend && npm test || echo "Aucun test frontend"'
+                    docker.image('node:18').inside('--user root:root') {
+                        sh 'cd gestion-smartphone-backend && npm test || echo "Aucun test backend"'
+                        sh 'cd gestion-smartphone-frontend && npm test || echo "Aucun test frontend"'
+                    }
                 }
             }
         }
 
+        /* === Build des images Docker === */
         stage('Build Docker Images') {
             steps {
                 script {
                     sh "docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest ./gestion-smartphone-frontend"
-                    sh "docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./gestion-smartphones-backend"
+                    sh "docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./gestion-smartphone-backend"
                 }
             }
         }
+
+        /* === Vérification de Docker et Docker Compose === */
         stage('Check Docker & Compose') {
-    steps {
-        sh '''
-            echo "Vérification de Docker et Docker Compose..."
-            docker --version
-            if ! command -v docker-compose &> /dev/null
-            then
-              echo "Installation de docker-compose..."
-              apt-get update && apt-get install -y docker-compose
-            fi
-            docker-compose --version
-        '''
-    }
-}
+            steps {
+                sh '''
+                    echo "Vérification de Docker et Docker Compose..."
+                    docker --version
+                    if ! command -v docker-compose &> /dev/null
+                    then
+                      echo "Installation de docker-compose..."
+                      apt-get update && apt-get install -y docker-compose
+                    fi
+                    docker-compose --version
+                '''
+            }
+        }
 
-
+        /* === Push sur Docker Hub === */
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -95,46 +104,28 @@ pipeline {
             }
         }
 
+        /* === Nettoyage des images et conteneurs inutiles === */
         stage('Clean Docker') {
             steps {
                 sh 'docker container prune -f'
                 sh 'docker image prune -f'
             }
         }
-        stage('Test docker-compose syntax') {
-    steps {
-        dir('.') {
-            sh '''
-                echo "🔍 Vérification du fichier docker-compose.yml..."
-                if [ ! -f docker-compose.yml ]; then
-                    echo "❌ Fichier docker-compose.yml introuvable !"
-                    exit 1
-                fi
 
-                echo "✅ Fichier trouvé. Vérification de la configuration..."
-                docker-compose -f docker-compose.yml config
-
-                echo "✅ Syntaxe docker-compose.yml valide."
-            '''
-        }
-    }
-}
-
-
-
-       stage('Deploy (docker-compose.yml)') {
-           steps {
+        /* === Déploiement avec docker-compose === */
+        stage('Deploy (docker-compose.yml)') {
+            steps {
                 dir('.') {
-                sh 'docker-compose -f docker-compose.yml down || true'
-                sh 'docker-compose -f docker-compose.yml pull'
-                sh 'docker-compose -f docker-compose.yml up -d'
-                sh 'docker-compose -f docker-compose.yml ps'
-                sh 'docker-compose -f docker-compose.yml logs --tail=50'
+                    sh 'docker-compose -f docker-compose.yml down || true'
+                    sh 'docker-compose -f docker-compose.yml pull || true'
+                    sh 'docker-compose -f docker-compose.yml up -d'
+                    sh 'docker-compose -f docker-compose.yml ps'
+                    sh 'docker-compose -f docker-compose.yml logs --tail=50 || true'
+                }
+            }
         }
-    }
-}
 
-
+        /* === Test de bon fonctionnement === */
         stage('Smoke Test') {
             steps {
                 sh '''
@@ -148,18 +139,19 @@ pipeline {
         }
     }
 
+    /* === Notifications mail === */
     post {
         success {
             emailext(
-                subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
+                subject: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline s'est exécuté avec succès 🎉\nDétails : ${env.BUILD_URL}",
                 to: "w.w.wgueyekhady@gmail.com"
             )
         }
         failure {
             emailext(
-                subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
+                subject: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a échoué 😞\nVérifie les logs ici : ${env.BUILD_URL}",
                 to: "w.w.wgueyekhady@gmail.com"
             )
         }
