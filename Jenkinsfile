@@ -107,11 +107,11 @@ pipeline {
         stage('Deploy (compose.yaml)') {
             steps {
                 dir('.') {  
-                    sh 'docker-compose -f compose.yaml down || true'
-                    sh 'docker-compose -f compose.yaml pull'
-                    sh 'docker-compose -f compose.yaml up -d'
-                    sh 'docker-compose -f compose.yaml ps'
-                    sh 'docker-compose -f compose.yaml logs --tail=50'
+                    sh 'docker-compose -f docker-compose.yml down || true'
+                    sh 'docker-compose -f docker-compose.yml pull'
+                    sh 'docker-compose -f docker-compose.yml up -d'
+                    sh 'docker-compose -f docker-compose.yml ps'
+                    sh 'docker-compose -f docker-compose.yml logs --tail=50'
                 }
             }
         }
