@@ -32,11 +32,10 @@ pipeline {
         stage('Install dependencies - Backend') {
             steps {
                 script {
-                    docker.image('node:18').inside('--user root:root') {
                         dir('gestion-smartphone-backend') {
                             sh 'npm ci || npm install'
                         }
-                    }
+                    
                 }
             }
         }
@@ -44,11 +43,10 @@ pipeline {
         stage('Install dependencies - Frontend') {
             steps {
                 script {
-                    docker.image('node:18').inside('--user root:root') {
                         dir('gestion-smartphone-frontend') {
                             sh 'npm ci || npm install'
                         }
-                    }
+                    
                 }
             }
         }
@@ -56,11 +54,9 @@ pipeline {
         /* === Tests === */
         stage('Run Tests') {
             steps {
-                script {
-                    docker.image('node:18').inside('--user root:root') {
+                script { 
                         sh 'cd gestion-smartphone-backend && npm test || echo "Aucun test backend"'
                         sh 'cd gestion-smartphone-frontend && npm test || echo "Aucun test frontend"'
-                    }
                 }
             }
         }
