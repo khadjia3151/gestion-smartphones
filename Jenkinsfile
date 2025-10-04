@@ -7,6 +7,18 @@ pipeline {
         BACK_IMAGE      = 'gestion-smartphones-backend'
     }
 
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'ref', value: '$.ref']  // lit la branche du push
+            ],
+            causeString: 'Triggered by webhook, branch $ref',
+            token: 'mon-secret-token',        // 🔑 secret entre GitHub et Jenkins
+            printContributedVariables: true,  // debug: voir les valeurs récupérées
+            printPostContent: true            // debug: voir le JSON reçu
+        )
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -18,8 +30,8 @@ pipeline {
             steps {
                 echo '🔨 Construction des images Docker...'
                 sh """
-                  docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest ./gestion-smartphone-frontend
-                  docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./gestion-smartphone-backend
+                  docker build -t ${DOCKER_HUB_USER}/${FRONT_IMAGE}:latest ./gestion-smartphone-frontend
+                  docker build -t ${DOCKER_HUB_USER}/${BACK_IMAGE}:latest ./gestion-smartphone-backend
                 """
             }
         }
@@ -38,8 +50,8 @@ pipeline {
             steps {
                 echo '🚀 Push des images sur DockerHub...'
                 sh """
-                  docker push $DOCKER_HUB_USER/$FRONT_IMAGE:latest
-                  docker push $DOCKER_HUB_USER/$BACK_IMAGE:latest
+                  docker push ${DOCKER_HUB_USER}/${FRONT_IMAGE}:latest
+                  docker push ${DOCKER_HUB_USER}/${BACK_IMAGE}:latest
                 """
             }
         }
