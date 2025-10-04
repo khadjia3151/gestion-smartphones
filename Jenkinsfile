@@ -1,6 +1,9 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs "NodeJS_18"}
+
     environment {
         DOCKER_HUB_USER = 'yayekhadygueye'
         FRONT_IMAGE = 'gestion-smartphones-frontend'
