@@ -2,15 +2,16 @@ pipeline {
     agent any
 
     tools {
-        nodejs "NodeJS_18"}
+        nodejs "NodeJS_16"
+    }
 
     environment {
         DOCKER_HUB_USER = 'yayekhadygueye'
         FRONT_IMAGE = 'gestion-smartphones-frontend'
         BACK_IMAGE  = 'gestion-smartphones-backend'
     }
-
     triggers {
+        // Pour que le pipeline démarre quand le webhook est reçu
         GenericTrigger(
             genericVariables: [
                 [key: 'ref', value: '$.ref'],
@@ -31,40 +32,31 @@ pipeline {
             }
         }
 
-        /* === Installation des dépendances === */
-        stage('Install dependencies - Backend') {
+        stage('Install dependencies - gestion-smartphone-backend') {
             steps {
-                script {
-                        dir('gestion-smartphone-backend') {
-                            sh 'npm ci || npm install'
-                        }
-                    
+                dir('gestion-smartphone-backend') {
+                    sh 'npm install'
                 }
             }
         }
 
-        stage('Install dependencies - Frontend') {
+        stage('Install dependencies - gestion-smartphone-frontend') {
             steps {
-                script {
-                        dir('gestion-smartphone-frontend') {
-                            sh 'npm ci || npm install'
-                        }
-                    
+                dir('gestion-smartphone-frontend') {
+                    sh 'npm install'
                 }
             }
         }
 
-        /* === Tests === */
         stage('Run Tests') {
             steps {
-                script { 
-                        sh 'cd gestion-smartphone-backend && npm test || echo "Aucun test backend"'
-                        sh 'cd gestion-smartphone-frontend && npm test || echo "Aucun test frontend"'
+                script {
+                    sh 'cd gestion-smartphone-backend && npm test || echo "Aucun test backend"'
+                    sh 'cd gestion-smartphone-frontend && npm test || echo "Aucun test frontend"'
                 }
             }
         }
 
-        /* === Build des images Docker === */
         stage('Build Docker Images') {
             steps {
                 script {
@@ -74,36 +66,19 @@ pipeline {
             }
         }
 
-        /* === Vérification de Docker et Docker Compose === */
-        stage('Check Docker & Compose') {
-            steps {
-                sh '''
-                    echo "Vérification de Docker et Docker Compose..."
-                    docker --version
-                    if ! command -v docker-compose &> /dev/null
-                    then
-                      echo "Installation de docker-compose..."
-                      apt-get update && apt-get install -y docker-compose
-                    fi
-                    docker-compose --version
-                '''
-            }
-        }
-
-        /* === Push sur Docker Hub === */
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $DOCKER_USER/$FRONT_IMAGE:latest
-                        docker push $DOCKER_USER/$BACK_IMAGE:latest
+                        docker push $DOCKER_USER/gestion-smartphones-frontend:latest
+                        docker push $DOCKER_USER/gestion-smartphone-backend:latest
                     '''
                 }
             }
         }
 
-        /* === Nettoyage des images et conteneurs inutiles === */
+        // on supprime les conteneur inactif dans docker container
         stage('Clean Docker') {
             steps {
                 sh 'docker container prune -f'
@@ -111,20 +86,25 @@ pipeline {
             }
         }
 
-        /* === Déploiement avec docker-compose === */
+        stage('Check Docker & Compose') {
+            steps {
+                sh 'docker --version'
+                sh 'docker-compose --version || echo "docker-compose non trouvé"'
+            }
+        }
+
         stage('Deploy (docker-compose.yml)') {
             steps {
-                dir('.') {
+                dir('.') {  
                     sh 'docker-compose -f docker-compose.yml down || true'
-                    sh 'docker-compose -f docker-compose.yml pull || true'
+                    sh 'docker-compose -f docker-compose.yml pull'
                     sh 'docker-compose -f docker-compose.yml up -d'
                     sh 'docker-compose -f docker-compose.yml ps'
-                    sh 'docker-compose -f docker-compose.yml logs --tail=50 || true'
+                    sh 'docker-compose -f docker-compose.yml logs --tail=50'
                 }
             }
         }
 
-        /* === Test de bon fonctionnement === */
         stage('Smoke Test') {
             steps {
                 sh '''
@@ -138,19 +118,18 @@ pipeline {
         }
     }
 
-    /* === Notifications mail === */
     post {
         success {
             emailext(
-                subject: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Le pipeline s'est exécuté avec succès 🎉\nDétails : ${env.BUILD_URL}",
+                subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
                 to: "w.w.wgueyekhady@gmail.com"
             )
         }
         failure {
             emailext(
-                subject: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Le pipeline a échoué 😞\nVérifie les logs ici : ${env.BUILD_URL}",
+                subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
                 to: "w.w.wgueyekhady@gmail.com"
             )
         }
