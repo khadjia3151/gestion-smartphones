@@ -1,9 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs "NodeJS_16"
-    }
 
     environment {
         DOCKER_HUB_USER = 'yayekhadygueye'
