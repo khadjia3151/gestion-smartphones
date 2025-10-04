@@ -57,8 +57,8 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    sh "docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest ./gestion-smartphones-frontend"
-                    sh "docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./gestion-smartphones-backend"
+                    sh "docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest ./gestion-smartphone-frontend"
+                    sh "docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./gestion-smartphone-backend"
                 }
             }
         }
