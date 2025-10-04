@@ -31,7 +31,7 @@ pipeline {
 
         stage('Install dependencies - Backend') {
             steps {
-                dir('gestion-smartphones-backend') {
+                dir('gestion-smartphone-backend') {
                     sh 'npm install'
                 }
             }
@@ -39,7 +39,7 @@ pipeline {
 
         stage('Install dependencies - Frontend') {
             steps {
-                dir('gestion-smartphones-frontend') {
+                dir('gestion-smartphone-frontend') {
                     sh 'npm install'
                 }
             }
