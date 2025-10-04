@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:18'  // ou node:20 si tu veux
+            args '-u root:root' // donne les droits root pour installer
+        }
+    }
 
 
     environment {
