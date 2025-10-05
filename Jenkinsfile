@@ -32,8 +32,8 @@ pipeline {
         stage('Install dependencies - Backend') {
             steps {
                 dir('gestion-smartphone-backend') {
-                    bat 'npm install'
-                    bat 'node -v && npm -v'
+                    sh 'npm install'
+                    sh 'node -v && npm -v'
                 }
             }
         }
@@ -41,8 +41,8 @@ pipeline {
         stage('Install dependencies - Frontend') {
             steps {
                 dir('gestion-smartphone-frontend') {
-                    bat 'npm install'
-                    bat 'node -v && npm -v'
+                    sh 'npm install'
+                    sh  'node -v && npm -v'
                 }
             }
         }
