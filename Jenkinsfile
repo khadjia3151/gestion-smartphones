@@ -1,4 +1,4 @@
-pipeline {
+pipeline { 
     agent any
 
     environment {
@@ -67,12 +67,12 @@ pipeline {
                 sh '''
                     echo "Vérification de Docker et Docker Compose..."
                     docker --version
-                    if ! command -v docker-compose &> /dev/null
+                    if ! command -v docker compose &> /dev/null
                     then
-                      echo "Installation de docker-compose..."
-                      apt-get update && apt-get install -y docker-compose
+                      echo "Installation de Docker Compose v2..."
+                      apt-get update && apt-get install -y docker-compose-plugin
                     fi
-                    docker-compose --version
+                    docker compose version
                 '''
             }
         }
@@ -96,14 +96,14 @@ pipeline {
             }
         }
 
-        stage('Deploy (docker-compose.yml)') {
+        stage('Deploy (compose.yaml)') {
             steps {
                 dir('.') {
-                    sh 'docker-compose -f docker-compose.yml down || true'
-                    sh 'docker-compose -f docker-compose.yml pull'
-                    sh 'docker-compose -f docker-compose.yml up -d'
-                    sh 'docker-compose -f docker-compose.yml ps'
-                    sh 'docker-compose -f docker-compose.yml logs --tail=50'
+                    sh 'docker compose -f compose.yaml down || true'
+                    sh 'docker compose -f compose.yaml pull'
+                    sh 'docker compose -f compose.yaml up -d'
+                    sh 'docker compose -f compose.yaml ps'
+                    sh 'docker compose -f compose.yaml logs --tail=50'
                 }
             }
         }
@@ -124,15 +124,15 @@ pipeline {
     post {
         success {
             emailext(
-                subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
+                subject: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a réussi 🎉\n\nDétails : ${env.BUILD_URL}",
                 to: "w.w.wgueyekhady@gmail.com"
             )
         }
         failure {
             emailext(
-                subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
+                subject: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a échoué ❗\n\nVérifie les logs : ${env.BUILD_URL}",
                 to: "w.w.wgueyekhady@gmail.com"
             )
         }
