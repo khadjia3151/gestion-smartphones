@@ -26,4 +26,4 @@ services:
       - backend
 
 volumes:
-  mongo_data:
+  mongo_data:    
