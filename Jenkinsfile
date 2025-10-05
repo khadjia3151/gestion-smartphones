@@ -1,5 +1,6 @@
 pipeline { 
     agent any
+    tools{nodejs "NodeJS_16"}
 
     environment {
         DOCKER_HUB_USER = 'yayekhadygueye'
@@ -31,7 +32,8 @@ pipeline {
         stage('Install dependencies - Backend') {
             steps {
                 dir('gestion-smartphone-backend') {
-                    sh 'npm install'
+                    bat 'npm install'
+                    bat 'node -v && npm -v'
                 }
             }
         }
@@ -39,7 +41,8 @@ pipeline {
         stage('Install dependencies - Frontend') {
             steps {
                 dir('gestion-smartphone-frontend') {
-                    sh 'npm install'
+                    bat 'npm install'
+                    bat 'node -v && npm -v'
                 }
             }
         }
