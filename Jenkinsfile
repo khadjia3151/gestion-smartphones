@@ -100,16 +100,27 @@ pipeline {
         }
 
         stage('Deploy (compose.yaml)') {
-            steps {
-                dir('.') {
-                    sh 'docker compose -f compose.yaml down || true'
-                    sh 'docker compose -f compose.yaml pull'
-                    sh 'docker compose -f compose.yaml up -d'
-                    sh 'docker compose -f compose.yaml ps'
-                    sh 'docker compose -f compose.yaml logs --tail=50'
-                }
-            }
+    steps {
+        dir('.') {
+            sh '''
+                echo "🧹 Arrêt des anciens conteneurs..."
+                docker compose -f compose.yaml down || true
+
+                echo "🏗️ Construction des images locales..."
+                docker compose -f compose.yaml build --no-cache
+
+                echo "🚀 Démarrage des services..."
+                docker compose -f compose.yaml up -d
+
+                echo "🔍 Vérification des conteneurs actifs..."
+                docker compose -f compose.yaml ps
+
+                echo "📜 Derniers logs..."
+                docker compose -f compose.yaml logs --tail=50
+            '''
         }
+    }
+}
 
         stage('Smoke Test') {
             steps {
