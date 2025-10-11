@@ -42,22 +42,25 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv('MySonarQube') {
-                        sh '''
-                            cd gestion-smartphone-backend
-                            sonar-scanner \
-                              -Dsonar.projectKey=gestion-smartphone-backend \
-                              -Dsonar.sources=. \
-                              -Dsonar.host.url=http://sonarqube:9000 \
-                              -Dsonar.login=$SONARQUBE_ENV
-                        '''
-                    }
+stage('SonarQube Analysis') {
+    steps {
+        script {
+            withSonarQubeEnv('MySonarQube') {
+                withSonarScanner('SonarScanner') {
+                    sh '''
+                        cd gestion-smartphone-backend
+                        sonar-scanner \
+                          -Dsonar.projectKey=gestion-smartphone-backend \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://sonarqube:9000 \
+                          -Dsonar.login=$SONARQUBE_ENV
+                    '''
                 }
             }
-        } 
+        }
+    }
+}
+
 
         stage('Build Docker Images') {
             steps {
