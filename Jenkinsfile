@@ -42,7 +42,7 @@ pipeline {
             }
         }
 
-        🟨 **stage('SonarQube Analysis') {**
+        stage('SonarQube Analysis') {
             steps {
                 script {
                     withSonarQubeEnv('MySonarQube') {
@@ -57,7 +57,7 @@ pipeline {
                     }
                 }
             }
-        } 🟨
+        } 
 
         stage('Build Docker Images') {
             steps {
