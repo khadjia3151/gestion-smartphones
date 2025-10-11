@@ -46,17 +46,25 @@ stage('SonarQube Analysis') {
     steps {
         script {
             withSonarQubeEnv('MySonarQube') {
-                withSonarScanner('SonarScanner') {
-                    sh '''
-                        cd gestion-smartphone-backend
-                        sonar-scanner \
-                          -Dsonar.projectKey=gestion-smartphone-backend \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=http://sonarqube:9000 \
-                          -Dsonar.login=$SONARQUBE_ENV
-                    '''
-                }
+                // Récupère le chemin du scanner configuré
+                def scannerHome = tool 'SonarScanner'
+
+                sh """
+                    cd gestion-smartphone-backend
+                    ${scannerHome}/bin/sonar-scanner \
+                      -Dsonar.projectKey=gestion-smartphone-backend \
+                      -Dsonar.sources=. \
+                      -Dsonar.host.url=$SONAR_HOST_URL \
+                      -Dsonar.login=$SONAR_AUTH_TOKEN
+                """
             }
+        }
+    }
+}
+stage('Quality Gate') {
+    steps {
+        timeout(time: 1, unit: 'HOURS') {
+            waitForQualityGate abortPipeline: true
         }
     }
 }
