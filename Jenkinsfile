@@ -1,16 +1,28 @@
 pipeline { 
     agent any
-    tools { nodejs "NodeJS_16" }
+    tools{nodejs "NodeJS_16"}
 
     environment {
         DOCKER_HUB_USER = 'yayekhadygueye'
         FRONT_IMAGE = 'gestion-smartphones-frontend'
         BACK_IMAGE  = 'gestion-smartphones-backend'
-        SONARQUBE_ENV = credentials('sonarqube-token') // 🔐 Récupère le token depuis Jenkins
+    }
+
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'ref', value: '$.ref'],
+                [key: 'pusher_name', value: '$.pusher.name'],
+                [key: 'commit_message', value: '$.head_commit.message']
+            ],
+            causeString: 'Push par $pusher_name sur $ref: "$commit_message"',
+            token: 'mysecret',
+            printContributedVariables: true,
+            printPostContent: true
+        )
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/khadjia3151/gestion-smartphones.git'
@@ -21,6 +33,7 @@ pipeline {
             steps {
                 dir('gestion-smartphone-backend') {
                     sh 'npm install'
+                    sh 'node -v && npm -v'
                 }
             }
         }
@@ -29,6 +42,7 @@ pipeline {
             steps {
                 dir('gestion-smartphone-frontend') {
                     sh 'npm install'
+                    sh  'node -v && npm -v'
                 }
             }
         }
@@ -41,8 +55,7 @@ pipeline {
                 }
             }
         }
-
-stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
     steps {
         script {
             withSonarQubeEnv('MySonarQube') {
@@ -55,7 +68,7 @@ stage('SonarQube Analysis') {
                       -Dsonar.projectKey=gestion-smartphone-backend \
                       -Dsonar.sources=. \
                       -Dsonar.host.url=$SONAR_HOST_URL \
-                      -Dsonar.login=$SONAR_AUTH_TOKEN
+                      -Dsonar.login=$sonarqube-token
                 """
             }
         }
@@ -69,7 +82,6 @@ stage('Quality Gate') {
     }
 }
 
-
         stage('Build Docker Images') {
             steps {
                 script {
@@ -79,7 +91,74 @@ stage('Quality Gate') {
             }
         }
 
-        // ... (le reste de ton Jenkinsfile inchangé)
+        stage('Check Docker & Compose') {
+            steps {
+                sh '''
+                    echo "Vérification de Docker et Docker Compose..."
+                    docker --version
+                    if ! command -v docker compose &> /dev/null
+                    then
+                      echo "Installation de Docker Compose v2..."
+                      apt-get update && apt-get install -y docker-compose-plugin
+                    fi
+                    docker compose version
+                '''
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials1', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push $DOCKER_USER/$FRONT_IMAGE:latest
+                        docker push $DOCKER_USER/$BACK_IMAGE:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Clean Docker') {
+            steps {
+                sh 'docker container prune -f'
+                sh 'docker image prune -f'
+            }
+        }
+
+        stage('Deploy (compose.yaml)') {
+    steps {
+        dir('.') {
+            sh '''
+                echo "🧹 Arrêt des anciens conteneurs..."
+                docker compose -f compose.yaml down || true
+
+                echo "🏗 Construction des images locales..."
+                docker compose -f compose.yaml build --no-cache
+
+                echo "🚀 Démarrage des services..."
+                docker compose -f compose.yaml up -d
+
+                echo "🔍 Vérification des conteneurs actifs..."
+                docker compose -f compose.yaml ps
+
+                echo "📜 Derniers logs..."
+                docker compose -f compose.yaml logs --tail=50
+            '''
+        }
+    }
+}
+
+        stage('Smoke Test') {
+            steps {
+                sh '''
+                    echo " Vérification Frontend (port 5173)..."
+                    curl -f http://localhost:5173 || echo "Frontend unreachable"
+
+                    echo " Vérification Backend (port 5001)..."
+                    curl -f http://localhost:5001/api || echo "Backend unreachable"
+                '''
+            }
+        }
     }
 
     post {
