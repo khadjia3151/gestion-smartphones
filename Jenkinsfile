@@ -65,7 +65,7 @@ pipeline {
                 sh """
                     cd gestion-smartphone-backend
                     ${scannerHome}/bin/sonar-scanner \
-                      -Dsonar.projectKey=gestion-smartphone-backend \
+                      -Dsonar.projectKey=Gestion-Smartphone-management \
                       -Dsonar.sources=. \
                       -Dsonar.host.url=$SONAR_HOST_URL \
                       -Dsonar.token=${env.SONAR_AUTH_TOKEN}
