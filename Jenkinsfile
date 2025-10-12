@@ -68,7 +68,8 @@ pipeline {
                       -Dsonar.projectKey=gestion-smartphone-backend \
                       -Dsonar.sources=. \
                       -Dsonar.host.url=$SONAR_HOST_URL \
-                      -Dsonar.login=$sonarqube-token
+                      -Dsonar.token=${env.SONAR_AUTH_TOKEN}
+
                 """
             }
         }
