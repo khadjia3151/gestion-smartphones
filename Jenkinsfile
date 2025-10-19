@@ -6,6 +6,7 @@ pipeline {
         DOCKER_HUB_USER = 'yayekhadygueye'
         FRONT_IMAGE = 'gestion-smartphones-frontend'
         BACK_IMAGE  = 'gestion-smartphones-backend'
+        K8S_DIR = 'k8s'
     }
 
     triggers {
@@ -120,7 +121,7 @@ pipeline {
             }
         }
 
-        stage('Deploy (compose.yaml)') {
+        /*stage('Deploy (compose.yaml)') {
     steps {
         dir('.') {
             sh '''
@@ -141,9 +142,40 @@ pipeline {
             '''
         }
     }
-}
+}*/
+        stage('Deploy to Kubernetes') {
+            steps {withSonarQubeEnv('MySonarQube'){
+                
+                script {
+                    echo "🚀 Déploiement sur Kubernetes..."
 
-        stage('Smoke Test') {
+                    // Vérifie kubectl
+                    sh 'kubectl version --client'
+
+                    // Applique les fichiers YAML
+                    sh '''
+                        kubectl apply -f k8s/mongo-deployment.yaml
+                        kubectl apply -f k8s/mongo-service.yaml
+                        kubectl apply -f k8s/backend-deployment.yaml
+                        kubectl apply -f k8s/backend-service.yaml
+                        kubectl apply -f k8s/frontend-deployment.yaml
+                        kubectl apply -f k8s/frontend-service.yaml
+                        kubectl apply -f k8s/ingress.yaml
+                    '''
+
+                    // Vérifie les pods et services
+                    sh '''
+                        echo "📦 Vérification des pods..."
+                        kubectl get pods
+                        echo "🌐 Vérification des services..."
+                        kubectl get svc
+                    '''
+                }
+            }}
+        }
+
+
+        /*stage('Smoke Test') {
             steps {
                 sh '''
                     echo " Vérification Frontend (port 5173)..."
@@ -154,7 +186,7 @@ pipeline {
                 '''
             }
         }
-    }
+    }*/
 
     post {
         success {
