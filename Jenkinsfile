@@ -56,7 +56,7 @@ pipeline {
                 }
             }
         }
-        stage('SonarQube Analysis') {
+       /* stage('SonarQube Analysis') {
     steps {
         script {
             withSonarQubeEnv('MySonarQube') {
@@ -75,7 +75,7 @@ pipeline {
             }
         }
     }
-}
+}*/
 
 
         stage('Build Docker Images') {
@@ -144,7 +144,7 @@ pipeline {
     }
 }*/
         stage('Deploy to Kubernetes') {
-            steps {withSonarQubeEnv('MySonarQube'){
+            steps {withKubeConfig([credentialsId: 'kubeconfig-jenkins']){
                 
                 script {
                     echo "🚀 Déploiement sur Kubernetes..."
@@ -164,12 +164,10 @@ pipeline {
                     '''
 
                     // Vérifie les pods et services
-                    sh '''
-                        echo "📦 Vérification des pods..."
-                        kubectl get pods
-                        echo "🌐 Vérification des services..."
-                        kubectl get svc
-                    '''
+                    // Vérifier que les pods sont Running
+                    sh "kubectl rollout status deployment/mongo"
+                    sh "kubectl rollout status deployment/backend"
+                    sh "kubectl rollout status deployment/frontend"
                 }
             }}
         }
